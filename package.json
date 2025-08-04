@@ -2,13 +2,12 @@
   "name": "iptv-proxy",
   "version": "1.0.0",
   "description": "Proxy IPTV para playlists m3u8 e segmentos TS via express",
-  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^5.1.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^2.6.12"
   }
 }
