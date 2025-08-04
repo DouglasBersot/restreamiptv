@@ -1,6 +1,5 @@
-import express from 'express';
-import fetch from 'node-fetch';
-
+const express = require('express');
+const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -8,52 +7,63 @@ const IPTV_HOST = 'http://cdnbrux.top';
 const USER = '593114288';
 const PASS = '948423782';
 
-// Proxy para playlist .m3u8
+// Função para setar headers CORS e anti-cache
+const setHeaders = (res) => {
+  res.set({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': '*',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+};
+
+// Proxy para playlist M3U8
 app.get('/live/:streamFile', async (req, res) => {
   const file = req.params.streamFile;
   const url = `${IPTV_HOST}/live/${USER}/${PASS}/${file}`;
 
   try {
-    const response = await fetch(url, { redirect: 'follow' });
-
-    const contentType = response.headers.get('content-type') || 'application/vnd.apple.mpegurl';
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    const response = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
 
     const body = await response.text();
-    res.send(body);
-  } catch (err) {
-    console.error('Erro ao buscar playlist:', err.message);
-    res.status(500).send('Erro ao buscar a playlist.');
+    setHeaders(res);
+    res.status(response.status).send(body);
+  } catch (error) {
+    console.error('Erro ao buscar playlist:', error.message);
+    res.sendStatus(500);
   }
 });
 
-// Proxy para segmentos .ts
-app.get('/hls/:tsSegment', async (req, res) => {
-  const segment = req.params.tsSegment;
-  const url = `${IPTV_HOST}/hls/${segment}`;
+// Proxy para segmentos TS
+app.get('/hls/:segment', async (req, res) => {
+  const segment = req.params.segment;
+  const query = req.url.split('?')[1] || '';
+  const url = `${IPTV_HOST}/hls/${segment}${query ? '?' + query : ''}`;
 
   try {
-    const response = await fetch(url, { redirect: 'follow' });
-
-    const contentType = response.headers.get('content-type') || 'video/MP2T';
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    const response = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
 
     const buffer = await response.arrayBuffer();
-    res.send(Buffer.from(buffer));
-  } catch (err) {
-    console.error('Erro ao buscar segmento:', err.message);
-    res.status(500).send('Erro ao buscar o segmento TS.');
+    setHeaders(res);
+    res.status(response.status).send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Erro ao buscar TS:', error.message);
+    res.sendStatus(500);
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Proxy IPTV rodando em http://localhost:${PORT}`);
+  console.log(`Proxy rodando em http://localhost:${PORT}`);
 });
